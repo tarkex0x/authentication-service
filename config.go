@@ -7,19 +7,19 @@ import (
 	"github.com/spf13/viper"
 )
 
-type Config struct {
-	DatabaseURL     string `mapstructure:"DATABASE_URL"`
-	APIKey          string `mapstructure:"API_KEY"`
-	SecretKey       string `mapstructure:"SECRET_KEY"`
-	OthersensitiveData string `mapstructure:"OTHER_SENSITIVE_DATA"`
+type AppConfig struct {
+	DatabaseURL        string `mapstructure:"DATABASE_URL"`
+	APIKey             string `mapstructure:"API_KEY"`
+	SecretKey          string `mapstructure:"SECRET_KEY"`
+	AdditionalSecrets  string `mapstructure:"OTHER_SENSITIVE_DATA"`
 }
 
-func LoadConfig(path string) (config Config, err error) {
-	viper.AddConfigPath(path)
-	viper.SetConfigName("app")
-	viper.SetConfigType("env")
+func LoadConfiguration(path string) (config AppConfig, err error) {
+	viper.AddConfigPath(path)  
+	viper.SetConfigName("app") 
+	viper.SetConfigType("env") 
 
-	viper.AutomaticEnv()
+	viper.AutomaticEnv()       
 
 	viper.SetDefault("DATABASE_URL", "localhost")
 	viper.SetDefault("API_KEY", "your-default-api-key")
@@ -28,7 +28,7 @@ func LoadConfig(path string) (config Config, err error) {
 
 	err = viper.ReadInConfig()
 	if err != nil {
-		fmt.Println(fmt.Errorf("Fatal error config file: %s \n", err))
+		fmt.Println(fmt.Errorf("Fatal error reading config file: %s \n", err))
 		os.Exit(1)
 	}
 
