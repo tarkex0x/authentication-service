@@ -18,50 +18,50 @@ func init() {
 	}
 }
 
-var ctx = context.Background()
+var appContext = context.Background()
 
-var rdb = redis.NewClient(&redis.Options{
-	Addr:     os.Getenv("REDIS_ADDR"), 
-	Password: os.Getenv("REDIS_PASSWORD"), 
-	DB:       0,                          
+var redisClient = redis.NewClient(&redis.Options{
+	Addr:     os.Getenv("REDIS_ADDR"),
+	Password: os.Getenv("REDIS_PASSWORD"),
+	DB:       0,
 })
 
-func generateSessionToken() (string, error) {
-	b := make([]byte, 16) 
-	_, err := rand.Read(b)
+func generateUniqueSessionToken() (string, error) {
+	randomBytes := make([]byte, 16)
+	_, err := rand.Read(randomBytes)
 	if err != nil {
 		return "", err
 	}
-	token := hex.EncodeToString(b)
-	return token, nil
+	sessionToken := hex.EncodeToString(randomBytes)
+	return sessionToken, nil
 }
 
-func CreateSession(userID string, ttl time.Duration) (string, error) {
-	token, err := generateSessionToken()
+func CreateNewSession(userID string, sessionTTL time.Duration) (string, error) {
+	sessionToken, err := generateUniqueSessionToken()
 	if err != nil {
 		return "", err
 	}
 
-	err = rdb.Set(ctx, token, userID, ttl).Err()
+	err = redisClient.Set(appContext, sessionToken, userID, sessionTTL).Err()
 	if err != nil {
 		return "", err
 	}
 
-	return token, nil
+	return sessionToken, nil
 }
 
-func CheckSession(token string) (bool, error) {
-	result, err := rdb.Get(ctx, token).Result()
+func ValidateSessionToken(receivedToken string) (bool, error) {
+	userID, err := redisClient.Get(appContext, receivedToken).Result()
 	if err == redis.Nil {
-		return false, nil 
+		return false, nil // Session token does not exist
 	} else if err != nil {
-		return false, err 
+		return false, err // Error while fetching from Redis
 	}
 
-	return result != "", nil 
+	return userID != "", nil // True if session exists
 }
 
-func DeleteSession(token string) error {
-	_, err := rdb.Del(ctx, token).Result()
+func InvalidateSessionToken(sessionToken string) error {
+	_, err := redisClient.Del(appContext, sessionToken).Result()
 	return err
 }
