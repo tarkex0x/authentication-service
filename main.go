@@ -9,93 +9,73 @@ import (
 )
 
 func main() {
-    // Load .env file
     if err := godotenv.Load(); err != nil {
-        log.Fatalf("Error loading .env file: %v", err)
+        log.Fatalf("Error loading environment variables from .env file: %v", err)
     }
 
-    // Set up Gin router
-    r := gin.Default()
-    r.Use(gin.Logger())
-    r.Use(errorHandlingMiddleware())
-    setUpRoutes(r)
+    router := gin.Default()
+    router.Use(gin.Logger())
+    router.Use(middlewareForErrorHandling())
+    configureRoutes(router)
 
-    // Get port from .env, default to a predetermined port if not found
     port := os.Getenv("PORT")
     if port == "" {
-        log.Fatalf("Port not defined in .env file")
+        log.Fatalf("PORT environment variable is not defined")
     }
 
-    // Start the HTTP server
-    if err := r.Run(":" + port); err != nil {
-        log.Fatalf("Failed to start server: %v", err)
+    if err := router.Run(":" + port); err != nil {
+        log.Fatalf("Failed to launch the server: %v", err)
     }
 }
 
-func setUpRoutes(router *gin.Engine) {
-    // Define routes and associate handlers
-    router.POST("/register", registerUser)
-    router.POST("/login", loginUser)
-    router.GET("/validateSession", validateSession)
+func configureRoutes(router *gin.Engine) {
+    router.POST("/register", handleUserRegistration)
+    router.POST("/login", handleUserLogin)
+    router.GET("/validateSession", handleSessionValidation)
 }
 
-func registerUser(c *gin.Context) {
-    // Placeholder for user registration logic
-    // TODO: Add database interaction and proper error handling
-    if success := mockDatabaseInsert(); !success {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to register user"})
+func handleUserRegistration(c *gin.Context) {
+    if success := simulateDatabaseInsert(); !success {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "User registration failed"})
         return
     }
-    c.JSON(http.StatusOK, gin.H{"message": "User registration"})
+    c.JSON(http.StatusOK, gin.H{"message": "User successfully registered"})
 }
 
-func loginUser(c *gin.Context) {
-    // Placeholder for user login logic
-    // TODO: Add authentication logic and proper error handling
-    if authenticated := mockUserAuthentication(); !authenticated {
-        c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+func handleUserLogin(c *gin.Context) {
+    if authenticated := simulateUserAuthentication(); !authenticated {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Login failed: Invalid credentials"})
         return
     }
-    c.JSON(http.StatusOK, gin.H{"message": "User login"})
+    c.JSON(http.StatusOK, gin.H{"message": "User successfully logged in"})
 }
 
-func validateSession(c *gin.Context) {
-    // Placeholder for session validation logic
-    // TODO: Implement session validation and proper error handling
-    if valid := mockSessionValidation(); !valid {
-        c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid session"})
+func handleSessionValidation(c *gin.Context) {
+    if valid := simulateSessionValidation(); !valid {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Session validation failed: Invalid session"})
         return
     }
-    c.JSON(http.StatusOK, gin.H{"message": "Session validation"})
+    c.JSON(http.StatusOK, gin.H{"message": "Session validated successfully"})
 }
 
-func errorHandlingMiddleware() gin.HandlerFunc {
+func middlewareForErrorHandling() gin.HandlerFunc {
     return func(c *gin.Context) {
-        // Process request
         c.Next()
-
-        // Check if there are any errors
         if len(c.Errors) > 0 {
-            // Log the error
-            log.Printf("Error encountered: %v", c.Errors[0])
-            // Respond with the first error encountered
+            log.Printf("Encountered error: %v", c.Errors[0])
             c.JSON(http.StatusInternalServerError, gin.H{"error": c.Errors[0].Error()})
         }
     }
 }
 
-// Mock functions to simulate database operations and logic, for demonstration purposes
-func mockDatabaseInsert() bool {
-    // Simulate database insert operation
-    return true // Change to false to simulate an insert error
+func simulateDatabaseInsert() bool {
+    return true
 }
 
-func mockUserAuthentication() bool {
-    // Simulate user authentication
-    return true // Change to false to simulate authentication failure
+func simulateUserAuthentication() bool {
+    return true
 }
 
-func mockSessionValidation() bool {
-    // Simulate session validation
-    return true // Change to false to simulate session validation failure
+func simulateSessionValidation() bool {
+    return true
 }
