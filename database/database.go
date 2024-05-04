@@ -24,75 +24,75 @@ type Session struct {
 	Token  string `gorm:"type:varchar(100);unique_index"`
 }
 
-var db *gorm.DB
-var err error
+var databaseConnection *gorm.DB
+var connectionError error
 
-func initDB() {
-	err = godotenv.Load()
-	if err != nil {
+func initializeDatabase() {
+	connectionError = godotenv.Load()
+	if connectionError != nil {
 		log.Fatalf("Error loading .env file")
 	}
 
-	dbDriver := os.Getenv("DB_DRIVER")
-	dbUser := os.Getenv("DB_USER")
-	dbPass := os.Getenv("DB_PASS")
-	dbName := os.Getenv("DB_NAME")
-	dbHost := os.Getenv("DB_HOST")
-	dbPort := os.Getenv("DB_PORT")
+	databaseDriver := os.Getenv("DB_DRIVER")
+	databaseUsername := os.Getenv("DB_USER")
+	databasePassword := os.Getenv("DB_PASS")
+	databaseName := os.Getenv("DB_NAME")
+	databaseHost := os.Getenv("DB_HOST")
+	databasePort := os.Getenv("DB_PORT")
 
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=True&loc=Local", dbUser, dbPass, dbHost, dbPort, dbName)
-	if dbDriver == "postgres" {
-		dsn = fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=disable", dbHost, dbPort, dbUser, dbName, dbPass)
+	databaseSourceName := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=True&loc=Local", databaseUsername, databasePassword, databaseHost, databasePort, databaseName)
+	if databaseDriver == "postgres" {
+		databaseSourceName = fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=disable", databaseHost, databasePort, databaseUsername, databaseName, databasePassword)
 	}
 
-	db, err = gorm.Open(dbDriver, dsn)
-	if err != nil {
-		log.Fatalf("Could not connect to database: %v", err)
+	databaseConnection, connectionError = gorm.Open(databaseDriver, databaseSourceName)
+	if connectionError != nil {
+		log.Fatalf("Could not connect to database: %v", connectionError)
 	}
 
-	db.AutoMigrate(&User{}, &Session{})
+	databaseConnection.AutoMigrate(&User{}, &Session{})
 }
 
-func createUser(user *User) {
-	db.Create(user)
+func createUserInDatabase(user *User) {
+	databaseConnection.Create(user)
 }
 
-func getUser(id uint) User {
+func fetchUserByID(userID uint) User {
 	var user User
-	db.First(&user, id)
+	databaseConnection.First(&user, userID)
 	return user
 }
 
-func updateUser(id uint, newData map[string]interface{}) {
-	db.Model(&User{}).Where("id = ?", id).Updates(newData)
+func updateUserByID(userID uint, newData map[string]interface{}) {
+	databaseConnection.Model(&User{}).Where("id = ?", userID).Updates(newData)
 }
 
-func deleteUser(id uint) {
+func deleteUserByID(userID uint) {
 	var user User
-	db.First(&user, id)
-	db.Delete(&user)
+	databaseConnection.First(&user, userID)
+	databaseConnection.Delete(&user)
 }
 
-func createSession(session *Session) {
-	db.Create(session)
+func createSessionInDatabase(session *Session) {
+	databaseConnection.Create(session)
 }
 
-func getSession(id uint) Session {
+func fetchSessionByID(sessionID uint) Session {
 	var session Session
-	db.First(&session, id)
+	databaseConnection.First(&session, sessionID)
 	return session
 }
 
-func updateSession(id uint, newData map[string]interface{}) {
-	db.Model(&Session{}).Where("id = ?", id).Updates(newData)
+func updateSessionByID(sessionID uint, newData map[string]interface{}) {
+	databaseConnection.Model(&Session{}).Where("id = ?", sessionID).Updates(newData)
 }
 
-func deleteSession(id uint) {
+func deleteSessionByID(sessionID uint) {
 	var session Session
-	db.First(&session, id)
-	db.Delete(&session)
+	databaseConnection.First(&session, sessionID)
+	databaseConnection.Delete(&session)
 }
 
 func main() {
-	initDB()
+	initializeDatabase()
 }
