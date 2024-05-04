@@ -46,30 +46,6 @@ func startServer(router *gin.Engine) {
     }
 }
 
-func handleUserRegistration(c *gin.Context) {
-    if !simulateDatabaseInsert() {
-        respondWithError(c, http.StatusInternalServerError, "User registration failed")
-        return
-    }
-    respondWithSuccess(c, "User successfully registered")
-}
-
-func handleUserLogin(c *gin.Context) {
-    if !simulateUserAuthentication() {
-        respondWithError(c, http.StatusUnauthorized, "Login failed: Invalid credentials")
-        return
-    }
-    respondWithSuccess(c, "User successfully logged in")
-}
-
-func handleSessionValidation(c *gin.Context) {
-    if !simulateSessionValidation() {
-        respondWithError(c, http.StatusUnauthorized, "Session validation failed: Invalid session")
-        return
-    }
-    respondWithSuccess(c, "Session validated successfully")
-}
-
 func middlewareForErrorHandling() gin.HandlerFunc {
     return func(c *gin.Context) {
         c.Next()
@@ -89,16 +65,13 @@ func respondWithSuccess(c *gin.Context, message string) {
 }
 
 func simulateDatabaseInsert() bool {
-    // Simulate a database insert operation
     return true
 }
 
 func simulateUserAuthentication() bool {
-    // Simulate user authentication
     return true
 }
 
 func simulateSessionValidation() bool {
-    // Simulate session validation
     return true
 }
