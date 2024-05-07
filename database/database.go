@@ -24,91 +24,88 @@ type Session struct {
     Token  string `gorm:"type:varchar(100);unique_index"`
 }
 
-var databaseConnection *gorm.DB
-var connectionError error
+var db *gorm.DB
+var dbConnectError error
 
 func main() {
-    initializeDatabase()
+    initializeDB()
 }
 
-func initializeDatabase() {
-    loadEnvVariables()
-    connectToDatabase()
-    autoMigrateDatabase()
+func initializeDB() {
+    loadEnvironmentVariables()
+    establishDBConnection()
+    migrateDBSchemas()
 }
 
-func loadEnvVariables() {
+func loadEnvironmentVariables() {
     if err := godotenv.Load(); err != nil {
         log.Fatalf("Error loading .env file: %v", err)
     }
 }
 
-func connectToDatabase() {
-    databaseConnection, connectionError = gorm.Open(getDatabaseDriver(), getDatabaseSourceName())
-    if connectionError != nil {
-        log.Fatalf("Could not connect to database: %v", connectionError)
+func establishDBConnection() {
+    db, dbConnectError = gorm.Open(determineDBDriver(), assembleDBConnectionString())
+    if dbConnectError != nil {
+        log.Fatalf("Could not establish connection with the database: %v", dbConnectError)
     }
 }
 
-func getDatabaseDriver() string {
+func determineDBDriver() string {
     return os.Getenv("DB_DRIVER")
 }
 
-func getDatabaseSourceName() string {
-    driver := getDatabaseDriver()
+func assembleDBConnectionString() string {
+    driver := determineDBDriver()
     if driver == "postgres" {
         return fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=disable", 
             os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_USER"), 
             os.Getenv("DB_NAME"), os.Getenv("DB_PASS"))
     }
-    // Default to MySQL configuration
     return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=True&loc=Local", 
         os.Getenv("DB_USER"), os.Getenv("DB_PASS"), os.Getenv("DB_HOST"), 
         os.Getenv("DB_PORT"), os.Getenv("DB_NAME"))
 }
 
-func autoMigrateDatabase() {
-    databaseConnection.AutoMigrate(&User{}, &Session{})
+func migrateDBSchemas() {
+    db.AutoMigrate(&User{}, &Session{})
 }
 
-// Entity-specific operations
-
-func createUserInDatabase(user *User) {
-    databaseConnection.Create(user)
+func addUser(user *User) {
+    db.Create(user)
 }
 
-func fetchUserByID(userID uint) User {
+func getUserByID(userID uint) User {
     var user User
-    databaseConnection.First(&user, userID)
+    db.First(&user, userID)
     return user
 }
 
-func updateUserByID(userID uint, newData map[string]interface{}) {
-    databaseConnection.Model(&User{}).Where("id = ?", userID).Updates(newData)
+func updateUser(userID uint, newAttributes map[string]interface{}) {
+    db.Model(&User{}).Where("id = ?", userID).Updates(newAttributes)
 }
 
-func deleteUserByID(userID uint) {
+func removeUser(userID uint) {
     var user User
-    databaseConnection.First(&user, userID)
-    databaseConnection.Delete(&user)
+    db.First(&user, userID)
+    db.Delete(&user)
 }
 
-func createSessionInDatabase(session *Session) {
-    databaseConnection.Create(session)
+func addSession(session *Session) {
+    db.Create(session)
 }
 
-func fetchSessionByID(sessionID uint) Session {
+func getSessionByID(sessionID uint) Session {
     var session Session
-    databaseConnection.First(&session, sessionID)
+    db.First(&session, sessionID)
     return session
 }
 
-func updateSessionByID(sessionID uint, newData map[string]interface{}) {
-    databaseConnection.Model(&Session{}).Where("id = ?", sessionID).Updates(newData)
+func updateSession(sessionID uint, newAttributes map[string]interface{}) {
+    db.Model(&Session{}).Where("id = ?", sessionID).Updates(newAttributes)
 }
 
-func deleteSessionByID(sessionID uint) {
+func removeSession(sessionID uint) {
     var session Session
-    databaseConnection.First(&session, sessionID)
-    databaseConnection.Delete(&session)
+    db.First(&session, sessionID)
+    db.Delete(&session)
 }
