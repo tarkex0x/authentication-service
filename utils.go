@@ -10,34 +10,41 @@ import (
 )
 
 func InitializeEnvironmentVariables() {
-    err := godotenv.Load()
-    if err != nil {
-        log.Fatalf("Error loading .env file: %v", err)
+    if err := godotenv.Load(); err != nil {
+        log.Printf("Warning: Error loading .env file: %v", err)
     }
 }
 
 func EnvironmentVariableOrDefault(key, fallbackValue string) string {
-    value, exists := os.LookupEnv(key)
-    if !exists {
-        return fallbackValue
+    if value, exists := os.LookupEnv(key); exists {
+        return value
     }
-    return value
+    return fallbackValue
 }
 
 func RespondWithError(writer http.ResponseWriter, statusCode int, errorMessage string) {
-    RespondWithJSON(writer, statusCode, map[string]string{"error": errorMessage})
+    if !RespondWithJSON(writer, statusCode, map[string]string{"error": errorMessage}) {
+        log.Println("Failed to send error response")
+    }
 }
 
-func RespondWithJSON(writer http.ResponseWriter, statusCode int, payload interface{}) {
+func RespondWithJSON(writer http.ResponseWriter, statusCode int, payload interface{}) bool {
     jsonResponse, err := json.Marshal(payload)
     if err != nil {
         writer.WriteHeader(http.StatusInternalServerError)
-        writer.Write([]byte("HTTP 500: Internal Server Error"))
-        return
+        if _, writeErr := writer.Write([]byte("HTTP 500: Internal Server Error")); writeErr != nil {
+            log.Printf("Error writing failure response: %v", writeErr)
+            return false
+        }
+        return true
     }
     writer.Header().Set("Content-Type", "application/json")
     writer.WriteHeader(statusCode)
-    writer.Write(jsonResponse)
+    if _, writeErr := writer.Write(jsonResponse); writeErr != nil {
+        log.Printf("Error writing JSON response: %v", writeErr)
+        return false
+    }
+    return true
 }
 
 func ValidateRequestPayload(payload interface{}) (isValid bool, errorMessage string) {
