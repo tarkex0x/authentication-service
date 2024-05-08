@@ -5,8 +5,14 @@ import (
     "log"
     "net/http"
     "os"
+    "sync"
 
     "github.com/joho/godotenv"
+)
+
+var (
+    envCache     = make(map[string]string)
+    envCacheLock = sync.RWMutex{}
 )
 
 func InitializeEnvironmentVariables() {
@@ -16,7 +22,17 @@ func InitializeEnvironmentVariables() {
 }
 
 func EnvironmentVariableOrDefault(key, fallbackValue string) string {
+    envCacheLock.RLock()
+    if value, exists := envCache[key]; exists {
+        envCacheLock.RUnlock()
+        return value
+    }
+    envCacheLock.RUnlock()
+
     if value, exists := os.LookupEnv(key); exists {
+        envCacheLock.Lock()
+        envCache[key] = value
+        envCacheLock.Unlock()
         return value
     }
     return fallbackValue
