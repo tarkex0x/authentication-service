@@ -18,18 +18,25 @@ type User struct {
 }
 
 func (u *User) CreateUser(db *gorm.DB) error {
-    hashedPassword, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
-    if err != nil {
+    var err error
+    if u.Password, err = hashPassword(u.Password); err != nil {
         log.Printf("Error hashing password for user %s: %v", u.Username, err)
         return errors.New("failed to hash password")
     }
-    u.Password = string(hashedPassword)
 
     if err := db.Create(u).Error; err != nil {
         log.Printf("Error creating user %s: %v", u.Username, err)
         return err
     }
     return nil
+}
+
+func hashPassword(password string) (string, error) {
+    hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+    if err != nil {
+        return "", err
+    }
+    return string(hashedPassword), nil
 }
 
 func (u *User) Authenticate(password string) (bool, error) {
@@ -80,21 +87,21 @@ func main() {
     }
 
     username, password := "testUser", "testPassword"
-    user := &User{Username: username, Password: password}
+    user := User{Username: username, Password: password}
 
-    if err := user.CreateUser(db); err != nil {
+    if err := (&user).CreateUser(db); err != nil {
         fmt.Println("Error creating user:", err)
         return
     }
     fmt.Println("User successfully created")
 
-    user, err = FindUserByUsername(db, username)
+    fetchedUser, err := FindUserByUsername(db, username)
     if err != nil {
         fmt.Println("Error finding user:", err)
         return
     }
 
-    authenticated, err := user.Authenticate(password)
+    authenticated, err := fetchedUser.Authenticate(password)
     if err != nil {
         fmt.Println("Authentication error:", err)
         return
