@@ -24,38 +24,38 @@ type Session struct {
 	Token  string `gorm:"type:varchar(100);unique_index"`
 }
 
-var db *gorm.DB
-var dbConnectError error
+var dbInstance *gorm.DB
+var dbConnectionError error
 
 func main() {
-	initializeDB()
+	initDB()
 }
 
-func initializeDB() {
-	loadEnvironmentVariables()
-	establishDBConnection()
-	migrateDBSchemas()
+func initDB() {
+	loadEnvVars()
+	connectToDB()
+	migrateSchemas()
 }
 
-func loadEnvironmentVariables() {
+func loadEnvVars() {
 	if err := godotenv.Load(); err != nil {
 		log.Fatalf("Error loading .env file: %v", err)
 	}
 }
 
-func establishDBConnection() {
-	db, dbConnectError = gorm.Open(determineDBDriver(), assembleDBConnectionString())
-	if dbConnectError != nil {
-		log.Fatalf("Could not establish connection with the database: %v", dbConnectError)
+func connectToDB() {
+	dbInstance, dbConnectionError = gorm.Open(getDBDriver(), getDBConnectionString())
+	if dbConnectionError != nil {
+		log.Fatalf("Failed to connect to database: %v", dbConnectionError)
 	}
 }
 
-func determineDBDriver() string {
+func getDBDriver() string {
 	return os.Getenv("DB_DRIVER")
 }
 
-func assembleDBConnectionString() string {
-	driver := determineDBDriver()
+func getDBConnectionString() string {
+	driver := getDBDriver()
 	if driver == "postgres" {
 		return fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=disable",
 			os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_USER"),
@@ -66,46 +66,46 @@ func assembleDBConnectionString() string {
 		os.Getenv("DB_PORT"), os.Getenv("DB_NAME"))
 }
 
-func migrateDBSchemas() {
-	db.AutoMigrate(&User{}, &Session{})
+func migrateSchemas() {
+	dbInstance.AutoMigrate(&User{}, &Session{})
 }
 
-func addUser(user *User) {
-	db.Create(user)
+func createUser(user *User) {
+	dbInstance.Create(user)
 }
 
-func getUserByID(userID uint) User {
+func findUserByID(userID uint) User {
 	var user User
-	db.First(&user, userID)
+	dbInstance.First(&user, userID)
 	return user
 }
 
-func updateUser(userID uint, newAttributes map[string]interface{}) {
-	db.Model(&User{}).Where("id = ?", userID).Updates(newAttributes)
+func updateUserAttributes(userID uint, newAttributes map[string]interface{}) {
+	dbInstance.Model(&User{}).Where("id = ?", userID).Updates(newAttributes)
 }
 
-func removeUser(userID uint) {
+func deleteUser(userID uint) {
 	var user User
-	db.First(&user, userID)
-	db.Delete(&user)
+	dbInstance.First(&user, userID)
+	dbInstance.Delete(&user)
 }
 
-func addSession(session *Session) {
-	db.Create(session)
+func createSession(session *Session) {
+	dbInstance.Create(session)
 }
 
-func getSessionByID(sessionID uint) Session {
+func findSessionByID(sessionID uint) Session {
 	var session Session
-	db.First(&session, sessionID)
+	dbInstance.First(&session, sessionID)
 	return session
 }
 
-func updateSession(sessionID uint, newAttributes map[string]interface{}) {
-	db.Model(&Session{}).Where("id = ?", sessionID).Updates(newAttributes)
+func updateSessionAttributes(sessionID uint, newAttributes map[string]interface{}) {
+	dbInstance.Model(&Session{}).Where("id = ?", sessionID).Updates(newAttributes)
 }
 
-func removeSession(sessionID uint) {
+func deleteSession(sessionID uint) {
 	var session Session
-	db.First(&session, sessionID)
-	db.Delete(&session)
+	dbInstance.First(&session, sessionID)
+	dbInstance.Delete(&session)
 }
